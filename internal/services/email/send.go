@@ -3,6 +3,7 @@ package email
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/smtp"
 	"time"
 
@@ -39,13 +40,19 @@ func (ec EmailConfig) send(from string, to []string, body []byte, fc services.Fe
 }
 
 func (ec EmailConfig) sendMailTLS(addr string, auth smtp.Auth, from string, to []string, body []byte) error {
-	var t *tls.Config
-	if ec.TLSInsecure {
-		t = &tls.Config{InsecureSkipVerify: true}
-	}
 	c, err := smtp.Dial(addr)
 	if err != nil {
 		return err
+	}
+	host, _, _ := net.SplitHostPort(addr)
+	var t *tls.Config = &tls.Config{
+		ServerName:                  host,
+		InsecureSkipVerify: false,
+	}
+
+	if ec.TLSInsecure {
+		//t = &tls.Config{InsecureSkipVerify: true}
+		t.InsecureSkipVerify = true
 	}
 	defer c.Close()
 	if err = c.Hello("localhost"); err != nil {
